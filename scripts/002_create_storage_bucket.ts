@@ -29,8 +29,8 @@ async function createStorageBucket() {
     console.log("[v0] Setting up RLS policies for 'pdfs' bucket...")
 
     // Policy: Users can upload files to their own user directory
-    try {
-      const { error: uploadPolicyError } = await supabase.rpc("fn_set_storage_policy", {
+    const { error: uploadPolicyError } = await supabase
+      .rpc("fn_set_storage_policy", {
         bucket_name: "pdfs",
         policy_name: "users_can_upload_own_pdfs",
         operation: "INSERT",
@@ -38,9 +38,10 @@ async function createStorageBucket() {
         using: "auth.uid()::text = split_part((storage.foldername(name))[1], '/', 1)",
         with_check: "auth.uid()::text = split_part((storage.foldername(name))[1], '/', 1)",
       })
-    } catch (err) {
-      console.log("[v0] Note: RLS policy setting via RPC not available, policies may need manual setup")
-    }
+      .catch((err) => {
+        console.log("[v0] Note: RLS policy setting via RPC not available, policies may need manual setup")
+        return { error: null }
+      })
 
     console.log("[v0] Storage bucket setup complete!")
   } catch (error) {

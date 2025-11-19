@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,49 +15,18 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-
-interface Folder {
-  id: string
-  name: string
-  parent_folder_id: string | null
-}
 
 interface PDFUploadDialogProps {
   onUploadSuccess?: () => void
-  defaultFolderId?: string | null
 }
 
-export function PDFUploadDialog({ onUploadSuccess, defaultFolderId }: PDFUploadDialogProps) {
+export function PDFUploadDialog({ onUploadSuccess }: PDFUploadDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [folders, setFolders] = useState<Folder[]>([])
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(defaultFolderId || null)
   const router = useRouter()
-
-  // Load folders when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      loadFolders()
-    }
-  }, [isOpen])
-
-  const loadFolders = async () => {
-    const supabase = createClient()
-    const { data } = await supabase.from("folders").select("*").order("name", { ascending: true })
-    if (data) {
-      setFolders(data)
-    }
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -89,7 +58,7 @@ export function PDFUploadDialog({ onUploadSuccess, defaultFolderId }: PDFUploadD
     setError(null)
 
     try {
-      // Get authenticated user
+      // Get current user
       const {
         data: { user },
         error: userError,
@@ -107,7 +76,6 @@ export function PDFUploadDialog({ onUploadSuccess, defaultFolderId }: PDFUploadD
         user_id: user.id,
         filename: file.name,
         file_path: filePath,
-        folder_id: selectedFolderId,
       })
 
       if (dbError) throw dbError
@@ -138,22 +106,6 @@ export function PDFUploadDialog({ onUploadSuccess, defaultFolderId }: PDFUploadD
             <Label htmlFor="pdf-file">Select PDF File</Label>
             <Input id="pdf-file" type="file" accept=".pdf" onChange={handleFileChange} disabled={isLoading} />
             {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="folder">Folder (Optional)</Label>
-            <Select value={selectedFolderId || "none"} onValueChange={(value) => setSelectedFolderId(value === "none" ? null : value)}>
-              <SelectTrigger id="folder">
-                <SelectValue placeholder="No folder" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No folder</SelectItem>
-                {folders.map((folder) => (
-                  <SelectItem key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-3 justify-end">

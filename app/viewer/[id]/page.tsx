@@ -4,8 +4,7 @@ import { PDFViewer } from "@/components/pdf-viewer"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function ViewerPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
 
   const {
@@ -20,7 +19,7 @@ export default async function ViewerPage({ params }: { params: Promise<{ id: str
   const { data: pdf, error } = await supabase
     .from("pdfs")
     .select("*")
-    .eq("id", id)
+    .eq("id", params.id)
     .eq("user_id", user.id)
     .single()
 
