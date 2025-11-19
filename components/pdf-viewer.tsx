@@ -42,11 +42,27 @@ export function PDFViewer({ pdfId, fileName, filePath }: PDFViewerProps) {
   useEffect(() => {
     const loadPDF = async () => {
       try {
-        const {
-          data: { publicUrl },
-        } = supabaseClient.storage.from("pdfs").getPublicUrl(filePath)
+        // Use createSignedUrl for private buckets with RLS
+        const { data, error } = await supabaseClient.storage
+          .from("pdfs")
+          .createSignedUrl(filePath, 3600) // URL valid for 1 hour
 
-        const pdf = await pdfjsLib.getDocument(publicUrl).promise
+        if (error) throw error
+        if (!data?.signedUrl) throw new Error("Failed to get signed URL")
+
+        // Fetch PDF with proper headers to avoid QUIC protocol issues
+        const response = await fetch(data.signedUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/pdf',
+          },
+          cache: 'no-cache',
+        })
+
+        if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.status}`)
+
+        const arrayBuffer = await response.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
         setPdf(pdf)
         setTotalPages(pdf.numPages)
         setIsLoading(false)

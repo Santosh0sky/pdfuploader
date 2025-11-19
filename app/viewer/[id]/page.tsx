@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { PDFViewer } from "@/components/pdf-viewer"
+import { PDFViewerEnhanced } from "@/components/pdf-viewer-enhanced"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
-export default async function ViewerPage({ params }: { params: { id: string } }) {
+export default async function ViewerPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const {
@@ -19,7 +21,7 @@ export default async function ViewerPage({ params }: { params: { id: string } })
   const { data: pdf, error } = await supabase
     .from("pdfs")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single()
 
@@ -28,15 +30,16 @@ export default async function ViewerPage({ params }: { params: { id: string } })
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-6">
+    <main className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-6 h-screen flex flex-col">
+        <div className="mb-6 flex items-center justify-between">
           <Link href="/dashboard">
             <Button variant="outline">Back to Dashboard</Button>
           </Link>
+          <ThemeToggle />
         </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <PDFViewer pdfId={pdf.id} fileName={pdf.filename} filePath={pdf.file_path} />
+        <div className="bg-card rounded-lg border p-6 flex-1 overflow-hidden">
+          <PDFViewerEnhanced pdfId={pdf.id} fileName={pdf.filename} filePath={pdf.file_path} />
         </div>
       </div>
     </main>

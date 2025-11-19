@@ -30,6 +30,9 @@ export default function LoginPage() {
         password,
       })
       if (error) throw error
+
+      // Refresh the router to update server-side session
+      router.refresh()
       router.push("/dashboard")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
